@@ -1,0 +1,43 @@
+name: DevOps CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run health check
+        run: |
+          node app.js &
+          sleep 3
+          curl http://localhost:3000/health
+
+      - name: Build Docker image
+        run: docker build -t vasundhara-devops-app .
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push to Docker Hub
+        run: |
+          docker tag vasundhara-devops-app ${{ secrets.DOCKER_USERNAME }}/vasundhara-devops-app:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/vasundhara-devops-app:latest
